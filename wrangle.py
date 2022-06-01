@@ -3,6 +3,7 @@ import numpy as np
 import os
 from env import host, username, password
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
 
 #### DATA ACQUISITION ####
 
@@ -85,44 +86,106 @@ def splitData(df,**kwargs):
 
 #### ZILLOW PREP ####
 def prep_zillow(df,**kwargs):
-  """
-  Cleans and prepares the telco data for analysis.  Assumes default SQL query - with resulting columsn - was used.
-  Returns: 3 dataframes in order of train, test, validate
-  Inputs:
+    """
+    Cleans and prepares the zillow data for analysis.  Assumes default SQL query - with resulting columsn - was used.
+    Returns: 3 dataframes in order of train, test, validate
+    Inputs:
     (R) df: Pandas dataframe to be cleaned and split for analysis
     (O -kw) val_ratio: Proportion of the whole dataset wanted for the validation subset (b/w 0 and 1). Default .2 (20%)
     (O -kw) test_ratio: Proportion of the whole dataset wanted for the test subset (b/w 0 and 1). Default .1 (10%)
-  """
-  #Drop nulls:
-  df.dropna(inplace=True)
-  
-  #Trim dataset
-  #drop top .1% of sf
-  df = df[df.sf<df.sf.quantile(.999)]
-  #drop anything less than 120 sf
-  df = df[df.sf>=120]
-  #drop 10+ beds, 10+ baths and 10+ million
-  df = df[(df.value < 10_000_000) & (df.bath < 10) & (df.bed <10)]
+    """
+    #Drop nulls:
+    df.dropna(inplace=True)
 
-  #MAP fips to a county column
-  df['county'] = df.fips.map({6037: 'LosAngeles_CA',6059:'Orange_CA',6111:'Ventura_CA'})
-  
-  #ENCODE into dummy df
-  d_df = pd.get_dummies(df['county'],drop_first=True)
-  #concat dummy df to the rest
-  df = pd.concat([df,d_df],axis=1)
-  
-  #CONVERT some floats to int
-  df.bed = df.bed.astype(int)
-  df.yearbuilt = df.yearbuilt.astype(int)
+    #Trim dataset
+    #drop top .1% of sf
+    df = df[df.sf<df.sf.quantile(.999)]
+    #drop anything less than 120 sf
+    df = df[df.sf>=120]
+    #drop 10+ beds, 10+ baths and 10+ million
+    df = df[(df.value < 10_000_000) & (df.bath < 10) & (df.bed <10)]
 
-  #DROP original fips column
-  df.drop(columns='fips',inplace=True)
+    #MAP fips to a county column
+    df['county'] = df.fips.map({6037: 'LosAngeles_CA',6059:'Orange_CA',6111:'Ventura_CA'})
 
-  #REORDER columns
-  df = df.reindex(columns=['value', 'county', 'bed', 'bath', 'sf', 'yearbuilt', 'taxamount', 'Orange_CA', 'Ventura_CA'])
+    #ENCODE into dummy df
+    d_df = pd.get_dummies(df['county'],drop_first=True)
+    #concat dummy df to the rest
+    df = pd.concat([df,d_df],axis=1)
 
-  #Now split the data:
-  train, test, validate = splitData(df,**kwargs)
+    #CONVERT some floats to int
+    df.bed = df.bed.astype(int)
+    df.yearbuilt = df.yearbuilt.astype(int)
 
-  return train, test, validate
+    #DROP fips and taxamount columns
+    df.drop(columns=['fips','taxamount'],inplace=True)
+
+    #REORDER columns
+    df = df.reindex(columns=['value', 'county', 'bed', 'bath', 'sf', 'yearbuilt', 'Orange_CA', 'Ventura_CA'])
+
+    #Now split the data:
+    train, test, validate = splitData(df,**kwargs)
+
+    return train, test, validate
+
+def wrangle_zillow(**kwargs):
+    """
+    Acquires zillow data from local csv or codeup server.  Cleans and splits data into 3 datasets.
+    Returns: 3 Pandas dataframes (train, test, validate)
+    Inputs:
+    (O -kw) val_ratio: Proportion of the whole dataset wanted for the validation subset (b/w 0 and 1). Default .2 (20%)
+    (O -kw) test_ratio: Proportion of the whole dataset wanted for the test subset (b/w 0 and 1). Default .1 (10%)
+    """
+    #Acquire data
+    df = getZillowData()
+    #clean, split and return data
+    return prep_zillow(df,**kwargs)
+
+def scale_zillow(tr,te,val,**kwargs):
+    '''
+    Takes prepped tr, test, validate zillow subsets. Scales the non-categorical independent variables and 
+      returns dataframes of the same structure
+
+    Returns: 3 Pandas DataFrames (Train, Test, Validate)
+    Inputs:
+           (R) tr: train dataset
+           (R) te: test dataset
+          (R) val: validate dataset
+      (O-kw) kind: Type of scaler you want to use.  Default: minmax
+                Options: minmax, standard, robust
+    '''
+    kind = kwargs.get('kind','minmax')
+
+    #Set the scaler 
+    if kind.lower() == 'minmax':
+        scaler = MinMaxScaler()
+    elif kind.lower() == 'standard':
+        scaler = StandardScaler()
+    elif kind.lower() == 'robust':
+        scaler = RobustScaler()
+    else:
+        print(f'Invalid entry for "kind", default MinMax scaler used')
+        scaler = MinMaxScaler()
+
+    #Pull out columns to be scaled
+    X_tr = tr[['bed','bath','sf','yearbuilt']]
+    X_te = te[['bed','bath','sf','yearbuilt']]
+    X_val = val[['bed','bath','sf','yearbuilt']]
+
+    #fit scaler and transform on train
+    tr_scaled = scaler.fit_transform(X_tr)
+    #transform the rest
+    te_scaled = scaler.transform(X_te)
+    val_scaled = scaler.transform(X_val)
+
+    #rebuild the dataframes in original format
+    # value (target), county (eda cat), <all scaled>, county (encoded cat)
+    tr_scaled = pd.concat([tr.iloc[:,0:2],tr_scaled,tr.iloc[:,-2:]],axis=1)
+    te_scaled = pd.concat([te.iloc[:,0:2],te_scaled,te.iloc[:,-2:]],axis=1)
+    val_scaled = pd.concat([val.iloc[:,0:2],val_scaled,val.iloc[:,-2:]],axis=1)
+
+    #return dataframes with scaled data
+    return tr_scaled, te_scaled, val_scaled
+
+    
+
