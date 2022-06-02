@@ -143,8 +143,9 @@ def wrangle_zillow(**kwargs):
 
 def scale_zillow(tr,te,val,**kwargs):
     '''
-    Takes prepped tr, test, validate zillow subsets. Scales the non-categorical independent variables and 
-      returns dataframes of the same structure
+    Takes prepped tr, test, validate zillow subsets. Scales the non-categorical independent variables and \
+      returns dataframes of the same structure.  Expects pandas dataframes with the following columns, \
+          in order: cols = ['value', 'county', 'bed', 'bath', 'sf', 'yearbuilt', 'Orange_CA', 'Ventura_CA']
 
     Returns: 3 Pandas DataFrames (Train, Test, Validate)
     Inputs:
@@ -172,11 +173,11 @@ def scale_zillow(tr,te,val,**kwargs):
     X_te = te[['bed','bath','sf','yearbuilt']]
     X_val = val[['bed','bath','sf','yearbuilt']]
 
-    #fit scaler and transform on train
-    tr_scaled = scaler.fit_transform(X_tr)
+    #fit scaler and transform on train - needs to be stored as pd.DF in order to concat
+    tr_scaled = pd.DataFrame(scaler.fit_transform(X_tr),columns=['bed','bath','sf','yearbuilt'],index=X_tr.index)
     #transform the rest
-    te_scaled = scaler.transform(X_te)
-    val_scaled = scaler.transform(X_val)
+    te_scaled = pd.DataFrame(scaler.transform(X_te),columns=['bed','bath','sf','yearbuilt'],index=X_te.index)
+    val_scaled = pd.DataFrame(scaler.transform(X_val),columns=['bed','bath','sf','yearbuilt'],index=X_val.index)
 
     #rebuild the dataframes in original format
     # value (target), county (eda cat), <all scaled>, county (encoded cat)
