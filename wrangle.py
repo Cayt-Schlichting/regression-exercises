@@ -102,8 +102,8 @@ def prep_zillow(df,**kwargs):
     df = df[df.sf<df.sf.quantile(.999)]
     #drop anything less than 120 sf
     df = df[df.sf>=120]
-    #drop 10+ beds, 10+ baths and 10+ million
-    df = df[(df.value < 10_000_000) & (df.bath < 10) & (df.bed <10)]
+    #drop 10+ beds, 10+ baths and 2+ million
+    df = df[(df.value < 2_000_000) & (df.bath < 10) & (df.bed <10)]
 
     #MAP fips to a county column
     df['county'] = df.fips.map({6037: 'LosAngeles_CA',6059:'Orange_CA',6111:'Ventura_CA'})
