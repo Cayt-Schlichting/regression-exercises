@@ -85,7 +85,9 @@ def baseline_mean_errors(y):
       (R)    y: actual values (pd.Series or np.array)
     '''
     #Create series of yhat_baseline
-    yhat_b = pd.Series(y.mean(),index=range(len(y)))
+    if isinstance(y,pd.Series): ind = y.index
+    else: ind = range(len(y))
+    yhat_b = pd.Series(y.mean(),index=ind)
     #Create DataFrame with performance stats as columns
     df = pd.DataFrame({
         'sse': [sse(y,yhat_b)],
@@ -93,3 +95,23 @@ def baseline_mean_errors(y):
         'rmse': [rmse(y,yhat_b)],
         },index=['yhat_baseline'])
     return df
+
+def better_than_base(y,yhat):
+    '''
+    Takes in actual and predicted values. Returns True/False on if \
+    the model performed better than the dataframe based on rmse.
+    
+    Returns: Boolean
+    Input:
+      (R)    y: actual values (pd.Series or np.array)
+      (R) yhat: predicted values (pd.Series or np.array)
+    
+    '''
+    #Determine if series or array - use info to create baseline series
+    if isinstance(y,pd.Series): ind = y.index
+    else: ind = range(len(y))
+    yhat_b = pd.Series(y.mean(),index=ind)
+    #Get RMSE for model and baseline
+    rmse_base = rmse(y, yhat_b)
+    rmse_mod = rmse(y,yhat)
+    return rmse_mod < rmse_base
