@@ -3,7 +3,7 @@ import pandas as pd
 import utils
 
 from math import sqrt
-from sklearn.metrics import mean_squared error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 
 
 #Individual calculations

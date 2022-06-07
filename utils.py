@@ -8,6 +8,7 @@ import seaborn as sns
 # 1) determine type of plot (facetgrid or axes subplot), then set appropriately
 # 2) consider making an x vs y parameters
 # 3) consider making millions/thousands parameter
+# 4) create an alpha selector - for opacity based off # of points plotted
 def yticks_mm(ax):
     '''
     Formats the y axis ticks to millions for axes subplots.
