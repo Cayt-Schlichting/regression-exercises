@@ -6,5 +6,7 @@ This repo contains regression exercises using the Zillow dataset.
   - Model evaluation helper functions can be found in evaluate.py.  Testing and scratchwork can be found in evaluate.ipynb
   - Scaling helper function are found in wrangle.py
   - Feature engineering scratchwork can be found in the associated file.
+  - Modeling work can be found in [example-regression-project repo](https://github.com/Cayt-Schlichting/example-regression-project/blob/main/modeling.ipynb)
+
 
 
