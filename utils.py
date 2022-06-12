@@ -59,7 +59,7 @@ def stats_result(p,null_h,**kwargs):
     DOES NOT HANDLE 1-TAILED T TESTS
     
     Required inputs:  p, null_h (str)
-    Optional inputs: alpha (default = .05), chi2, r, t
+    Optional inputs: alpha (default = .05), chi2, r, t, corr
     
     """
     #Get alpha value - Default to .05 if not provided
@@ -68,6 +68,7 @@ def stats_result(p,null_h,**kwargs):
     t=kwargs.get('t',None)
     r=kwargs.get('r',None)
     chi2=kwargs.get('chi2',None)
+    corr=kwargs.get('corr',None)
     
     #Print null hypothesis
     print(f'\n\033[1mH\u2080:\033[0m {null_h}')
@@ -78,6 +79,7 @@ def stats_result(p,null_h,**kwargs):
     if 't' in kwargs: print(f'  t: {t}')
     if 'r' in kwargs: print(f'  r: {r}')
     if 'chi2' in kwargs: print(f'  chi2: {chi2}')
+    if 'corr' in kwargs: print(f'  corr: {corr}')
 
     return None
 
